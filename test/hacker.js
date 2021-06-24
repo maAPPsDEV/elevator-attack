@@ -1,4 +1,5 @@
 const Hacker = artifacts.require("Hacker");
+const Elevator = artifacts.require("Elevator");
 const { expect } = require("chai");
 
 /*
@@ -7,8 +8,11 @@ const { expect } = require("chai");
  * See docs: https://www.trufflesuite.com/docs/truffle/testing/writing-tests-in-javascript
  */
 contract("Hacker", function ([_owner, _hacker]) {
-  it("should assert true", async function () {
+  it("should move elevator to top floor", async function () {
     const hackerContract = await Hacker.deployed();
-    return assert.isTrue(true);
+    const targetContract = await Elevator.deployed();
+    const result = await hackerContract.attack(targetContract.address, { from: _hacker });
+    expect(result.receipt.status).to.be.equal(true);
+    expect(await targetContract.top()).to.be.equal(true);
   });
 });

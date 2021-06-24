@@ -1,39 +1,42 @@
-# Solidity Game - [Game Title] Attack
+# Solidity Game - Elevator Attack
 
-_Inspired by OpenZeppelin's [Ethernaut](https://ethernaut.openzeppelin.com), [Game Title] Level_
+_Inspired by OpenZeppelin's [Ethernaut](https://ethernaut.openzeppelin.com), Elevator Level_
 
 ⚠️Do not try on mainnet!
 
 ## Task
 
-Hacker the basic token contract below.
+This elevator won't let you reach the top of your building. Right?
 
-1. You are given 20 tokens to start with and you will beat the game if you somehow manage to get your hands on any additional tokens. Preferably a very large amount of tokens.
+1. Bring the elevator at the top.
 
 _Hint:_
 
-1. What is an odometer?
+1. Sometimes solidity is not good at keeping promises.
+2. This `Elevator` expects to be used from a `Building`.
 
 ## What will you learn?
 
-1. Solidity Security Consideration
-2. **Underflow** and **Overflow** in use of unsigned integers
+1. What are Interfaces
 
-## What is the most difficult challenge?
+   Interfaces allow different contract classes to talk to each other.
+   Think of interfaces as an ABI (or API) declaration that forces contracts to all communicate in the same language/data structure. But interfaces do not prescribe the logic inside the functions, leaving the developer to implement his own business layer.
 
-**You won't get success to attack if the target contract has been complied in Solidity 0.8.0 or uppper** 🤔
+   > Contract Interfaces specifies the WHAT but not the HOW
 
-> [**Solidity v0.8.0 Breaking Changes**](https://docs.soliditylang.org/en/v0.8.5/080-breaking-changes.html?highlight=underflow#silent-changes-of-the-semantics)
->
-> Arithmetic operations revert on **underflow** and **overflow**. You can use `unchecked { ... }` to use the previous wrapping behaviour.
->
-> Checks for overflow are very common, so we made them the default to increase readability of code, even if it comes at a slight increase of gas costs.
+   **Developers typically use interfaces:**
 
-I had tried to do everything in Solidity 0.8.5 at first time, but it didn't work, as it reverted transactions everytime it met underflow.
+   - **To design contracts:** by generating a working ABI first, before implementing the actual contract.
+   - **For token contracts:** by declaring a shared language, so different contracts can use these tokens to handle their business logic.
+   - **Not used:** some developer want to scrap interfaces altogether, in favor of abstract classes\*.
 
-Finally, I found that Solidity included those checks by defaults while using sliencely more gas.
+   > \*Note: Abstract classes share similar security vulnerabilities with interfaces. In abstract contracts some functions are already programmed, but can be easily overridden.
 
-So, don't you need to use [`SafeMath`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeMath.sol)?
+## What is the most difficult challenge? 💣
+
+- Interfaces do not guarantee contract security. Remember that just because another contract uses the same interface, doesn’t mean it will behave as intended!
+
+- Be careful when inheriting contracts that extend from interfaces. Each layer of abstraction introduces security issues through information obscurity. This makes each generation of the contract less and less secure than the previous.
 
 ## Source Code
 
@@ -41,25 +44,23 @@ So, don't you need to use [`SafeMath`](https://github.com/OpenZeppelin/openzeppe
 
 ```solidity
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
+pragma solidity ^0.8.5;
 
-contract Token {
-  mapping(address => uint256) balances;
-  uint256 public totalSupply;
+interface Building {
+  function isLastFloor(uint256) external returns (bool);
+}
 
-  constructor(uint256 _initialSupply) public {
-    balances[msg.sender] = totalSupply = _initialSupply;
-  }
+contract Elevator {
+  bool public top;
+  uint256 public floor;
 
-  function transfer(address _to, uint256 _value) public returns (bool) {
-    require(balances[msg.sender] - _value >= 0);
-    balances[msg.sender] -= _value;
-    balances[_to] += _value;
-    return true;
-  }
+  function goTo(uint256 _floor) public {
+    Building building = Building(msg.sender);
 
-  function balanceOf(address _owner) public view returns (uint256 balance) {
-    return balances[_owner];
+    if (!building.isLastFloor(_floor)) {
+      floor = _floor;
+      top = building.isLastFloor(floor);
+    }
   }
 }
 
@@ -104,9 +105,9 @@ Compiling your contracts...
 
 
   Contract: Hacker
-    √ should steal countless of tokens (377ms)
+    √ should move elevator to top floor (250ms)
 
 
-  1 passing (440ms)
+  1 passing (334ms)
 
 ```
